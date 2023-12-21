@@ -1,0 +1,127 @@
+[ req ]
+default_bits       = 2048
+distinguished_name = req_distinguished_name
+req_extensions     = v3_req
+
+[ req_distinguished_name ]
+countryName                 = Country Name (2 letter code)
+countryName_default         = US
+stateOrProvinceName         = State or Province Name (full name)
+stateOrProvinceName_default = New York
+localityName                = Locality Name (eg, city)
+localityName_default        = New York City
+organizationName            = Organization Name (eg, company)
+organizationName_default    = My Organization
+commonName                  = Common Name (e.g., server FQDN or YOUR name)
+commonName_default          = www.ewubdca.com
+
+[ v3_req ]
+basicConstraints = CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = www.ewubdca.com
+DNS.2 = apply.ewubdca.com
+DNS.3 = download.ewubdca.com
+
+
+openssl req -new -key www.ewubdca.com.key -config openssl.cnf -out www.ewubdca.com.csr
+openssl x509 -req -in www.ewubdca.com.csr -CA AcmeSubCA.crt -CAkey AcmeSubCA.key -CAcreateserial -out www.ewubdca.com.crt -days 3650 -extfile openssl.cnf -extensions v3_req
+
+
+
+
+
+
+
+=======================================================================================
+
+
+
+
+
+
+
+
+# Generate Root CA private key
+openssl genrsa -out AcmeCA.key 2048
+
+# Generate Root CA certificate
+openssl req -new -x509 -days 3650 -key AcmeCA.key -out AcmeCA.crt -subj "/CN=AcmeCA"
+
+-=--------------------------
+
+nano v3.ext
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:TRUE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+
+
+
+# Generate Sub CA private key
+openssl genrsa -out AcmeSubCA.key 2048
+
+# Generate Sub CA certificate signing request
+openssl req -new -key AcmeSubCA.key -out AcmeSubCA.csr -subj "/CN=AcmeSubCA"
+
+# Sign Sub CA certificate using the Root CA
+#openssl x509 -req -in AcmeSubCA.csr -CA AcmeCA.crt -CAkey AcmeCA.key -CAcreateserial -out AcmeSubCA.crt -days 3650 -extfile v3.ext -extensions SAN
+openssl x509 -req -in AcmeSubCA.csr -CA AcmeCA.crt -CAkey AcmeCA.key -CAcreateserial -out AcmeSubCA.crt -days 3650 -extfile v3.ext -extensions v3_ca
+--------------------------------------------------------------
+
+# Generate server private key
+openssl genrsa -out www.ewubdca.com.key 2048
+
+# Generate server certificate signing request
+#openssl req -new -key www.ewubdca.com.key -subj "/CN=www.ewubdca.com" -reqexts SAN -out www.ewubdca.com.csr
+openssl req -new -key www.ewubdca.com.key -subj "/CN=www.ewubdca.com" -addext "subjectAltName=DNS:www.ewubdca.com,DNS:apply.ewubdca.com,DNS:download.ewubdca.com" -out www.ewubdca.com.csr
+
+
+nano v3_server.ext
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+
+[SAN]
+subjectAltName=DNS:apply.ewubdca.com,DNS:download.ewubdca.com
+
+# Sign server certificate using the Sub CA
+openssl x509 -req -in www.ewubdca.com.csr -CA AcmeSubCA.crt -CAkey AcmeSubCA.key -CAcreateserial -out www.ewubdca.com.crt -days 3650 -extfile v3_server.ext -extensions SAN
+
+
+
+
+
+
+-===========================================
+
+cat AcmeSubCA.crt AcmeCA.crt > ewubdca-subca-chain.crt
+sudo cp ewubdca-subca-chain.crt /etc/ssl/certs/
+
+
+
+# Move Root CA and Sub CA certificates
+sudo cp AcmeCA.crt /etc/ssl/certs/
+sudo cp AcmeSubCA.crt /etc/ssl/certs/
+
+# Move Server certificate and private key
+sudo cp www.ewubdca.com.crt /etc/ssl/certs/
+sudo cp www.ewubdca.com.key /etc/ssl/private/
+
+
+# Move Root CA and Sub CA private keys
+sudo cp AcmeCA.key /etc/ssl/private/
+sudo cp AcmeSubCA.key /etc/ssl/private/
+
+
+
+sudo gedit /etc/apache2/sites-available/ewubdca-ssl.conf
+
+sudo gedit /etc/apache2/sites-enabled/ewubdca-ssl.conf
+
+sudo service apache2 restart
+
+
+
+

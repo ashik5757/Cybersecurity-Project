@@ -1,0 +1,16 @@
+
+sudo adduser username
+
+sudo usermod -aG sudo username
+
+su - username
+
+sudo -i -u username
+
+
+chmod 700 /path/to/your/folder
+
+
+
+sudo cat /var/log/auth.log
+

@@ -1,0 +1,152 @@
+sudo apt-get install bind9
+
+
+----------
+sudo nano /etc/bind/named.conf.local
+
+zone "ewubdca.com" IN {
+    type master;
+    file "/etc/bind/db.ewubdca";
+};
+
+zone "cnn.com" IN {
+    type master;
+    file "/etc/bind/db.cnn";
+};
+
+zone "bbc.com" IN {
+    type master;
+    file "/etc/bind/db.bbc";
+};
+
+
+--------------------------------------------------------
+
+sudo nano /etc/bind/db.ewubdca
+
+$TTL    604800
+@       IN      SOA     ns1.ewubdca.com. root.ewubdca.com. (
+                              2023121003
+                              604800
+                              86400
+                              2419200
+                              604800 )
+
+@       IN      NS      ns1.ewubdca.com.
+ns1     IN      A       192.168.0.148
+www     IN      A       192.168.0.148
+apply   IN      A       192.168.0.148
+download IN     A       192.168.0.148
+@       IN      AAAA    ::1
+
+
+
+-----------
+
+sudo nano /etc/bind/db.cnn
+
+$TTL    604800
+@       IN      SOA     ns1.cnn.com. root.cnn.com. (
+                            2023121003
+                            604800
+                            86400
+                            2419200
+                            604800 )
+
+@       IN      NS      ns1.cnn.com.
+ns1     IN      A       192.168.0.148
+www     IN      A       192.168.0.148
+@       IN      AAAA    ::1
+
+
+-------------
+
+sudo nano /etc/bind/db.bbc
+
+$TTL    604800
+@       IN      SOA     ns1.bbc.com. root.bbc.com. (
+                            2023121003
+                            604800
+                            86400
+                            2419200
+                            604800 )
+
+@       IN      NS      ns1.bbc.com.
+ns1     IN      A       192.168.0.148
+www     IN      A       192.168.0.148
+@       IN      AAAA    ::1
+
+
+-----------------------------------------
+
+sudo nano /etc/bind/named.conf.local
+
+// Reverse Lookup
+
+zone "0.168.192.in-addr.arpa" IN {
+    type master;
+    file "/etc/bind/db.0.168.192";
+};
+
+---------------------------------------
+
+sudo nano /etc/bind/db.0.168.192
+
+$TTL    604800
+@       IN      SOA     ns1.ewubdca.com. root.ewubdca.com. (
+                            2023121003
+                            604800
+                            86400
+                            2419200
+                            604800 )
+
+@       IN      NS     ns1.ewubdca.com.
+1      IN      PTR     www.ewubdca.com.
+2      IN      PTR     apply.ewubdca.com.
+3      IN      PTR     download.ewubdca.com.
+4      IN      PTR     www.cnn.com.
+5      IN      PTR     www.bbc.com.
+
+
+------------------------------------------------------------
+
+
+sudo service apache2 restart
+sudo service bind9 reload
+sudo service bind9 restart
+
+
+nslookup www.ewubdca.com
+nslookup www.bbc.com
+nslookup www.cnn.com
+
+ping www.ewubdca.com
+ping apply.ewubdca.com
+ping download.ewubdca.com
+ping www.bbc.com
+ping www.cnn.com
+
+sudo ufw status
+sudo ufw enable
+sudo ufw allow bind9
+
+
+-----------------------------------------------------
+
+ln -sf /run/systemd/resolve/resolv.conf
+
+
+========Reset resolv.conf============
+sudo systemctl restart systemd-resolved
+
+==================then copy base to resolv.conf
+sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+
+nameserver 192.168.0.148
+nameserver 192.168.0.1
+search localdomain
+
+==============================================
+
+
+

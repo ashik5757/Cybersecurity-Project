@@ -1,0 +1,426 @@
+--------Cretae all directory
+mkdir -p ca/{root-ca,sub-ca,server}/{private,certs,newcerts,crl,csr}
+
+--------convert private directory to need user auth.
+chmod -v 700 ca/{root-ca,sub-ca,server}/private
+
+-------create index file
+touch ca/{root-ca,sub-ca}/index
+
+
+----------carete serial no. file
+openssl rand -hex 16
+openssl rand -hex 16 > ca/root-ca/serial
+openssl rand -hex 16 > ca/sub-ca/serial
+
+
+cd ca/server/private/
+ls
+man req
+openssl req --help
+
+--------------Generate self-signed cert
+openssl req -new -newkey rsa:2048 -days 365 -nodes -x509 -subj '/CN=www.ewubdca.com' -keyout server.key -out server.crt
+
+---------------Read server cert
+openssl x509 -text -in server.crt -noout
+
+--------
+rm *
+------------------------------
+
+
+In ca/ dir.......
+
+--------------Create private keys for ca
+openssl genrsa -aes256 -out root-ca/private/ca.key 4096
+
+--------------Create private keys for sub ca
+openssl genrsa -aes256 -out sub-ca/private/sub-ca.key 4096
+
+
+--------------Create server key without encrypted
+openssl genrsa -out server/private/server.key 4096
+
+
+-------------Create Root CA certificate
+nano root-ca/root-ca.conf
+
+=======For RootCA===========
+===================================================
+
+[ca]
+#see man ca
+default_ca    = CA_default
+
+[CA_default]
+dir     = /root/ca/root-ca
+certs     =  $dir/certs
+crl_dir    = $dir/crl
+new_certs_dir   = $dir/newcerts
+database   = $dir/index
+serial    = $dir/serial
+RANDFILE   = $dir/private/.rand
+
+private_key   = $dir/private/ca.key
+certificate   = $dir/certs/ca.crt
+
+crlnumber   = $dir/crlnumber
+crl    =  $dir/crl/ca.crl
+crl_extensions   = crl_ext
+default_crl_days    = 30
+
+default_md   = sha256
+
+name_opt   = ca_default
+cert_opt   = ca_default
+default_days   = 365
+preserve   = no
+policy    = policy_strict
+
+[ policy_strict ]
+countryName   = supplied
+stateOrProvinceName  =  supplied
+organizationName  = match
+organizationalUnitName  =  optional
+commonName   =  supplied
+emailAddress   =  optional
+
+[ policy_loose ]
+countryName   = optional
+stateOrProvinceName  = optional
+localityName   = optional
+organizationName  = optional
+organizationalUnitName   = optional
+commonName   = supplied
+emailAddress   = optional
+
+[ req ]
+#Options for the req tool, man req.
+default_bits   = 2048
+distinguished_name  = req_distinguished_name
+string_mask   = utf8only
+default_md   =  sha256
+#Extension to add when the -x509 option is used.
+x509_extensions   = v3_ca
+
+[ req_distinguished_name ]
+countryName                     = Country Name (2 letter code)
+stateOrProvinceName             = State or Province Name
+localityName                    = Locality Name
+0.organizationName              = Organization Name
+organizationalUnitName          = Organizational Unit Name
+commonName                      = Common Name
+emailAddress                    = Email Address
+countryName_default  = GB
+stateOrProvinceName_default = England
+0.organizationName_default = TheUrbanPenguin Ltd
+
+[ v3_ca ]
+#Extensions to apply when createing root ca
+#Extensions for a typical CA, man x509v3_config
+subjectKeyIdentifier  = hash
+authorityKeyIdentifier  = keyid:always,issuer
+basicConstraints  = critical, CA:true
+keyUsage   =  critical, digitalSignature, cRLSign, keyCertSign
+
+[ v3_intermediate_ca ]
+#Extensions to apply when creating intermediate or sub-ca
+#Extensions for a typical intermediate CA, same man as above
+subjectKeyIdentifier  = hash
+authorityKeyIdentifier  = keyid:always,issuer
+#pathlen:0 ensures no more sub-ca can be created below an intermediate
+basicConstraints  = critical, CA:true, pathlen:0
+keyUsage   = critical, digitalSignature, cRLSign, keyCertSign
+
+[ server_cert ]
+#Extensions for server certificates
+basicConstraints  = CA:FALSE
+nsCertType   = server
+nsComment   =  "OpenSSL Generated Server Certificate"
+subjectKeyIdentifier  = hash
+authorityKeyIdentifier  = keyid,issuer:always
+keyUsage   =  critical, digitalSignature, keyEncipherment
+extendedKeyUsage  = serverAuth
+
+=========================================================
+
+----------config
+cd root-ca/
+openssl req -config root-ca.conf -key private/ca.key -new -x509 -days 7000 -sha256 -extensions v3_ca -out certs/ca.crt
+
+----------Read
+openssl x509 -noout -in certs/ca.crt -text
+
+
+
+=======For SubCA===========
+cd ../sub-ca/
+nano sub-ca.conf
+===================================================
+
+[ca]
+#see man ca
+default_ca    = CA_default
+
+[CA_default]
+dir     = /root/ca/sub-ca
+certs     =  $dir/certs
+crl_dir    = $dir/crl
+new_certs_dir   = $dir/newcerts
+database   = $dir/index
+serial    = $dir/serial
+RANDFILE   = $dir/private/.rand
+
+private_key   = $dir/private/sub-ca.key
+certificate   = $dir/certs/sub-ca.crt
+
+crlnumber   = $dir/crlnumber
+crl    =  $dir/crl/ca.crl
+crl_extensions   = crl_ext
+default_crl_days    = 30
+
+default_md   = sha256
+
+name_opt   = ca_default
+cert_opt   = ca_default
+default_days   = 365
+preserve   = no
+policy    = policy_loose
+
+[ policy_strict ]
+countryName   = supplied
+stateOrProvinceName  =  supplied
+organizationName  = match
+organizationalUnitName  =  optional
+commonName   =  supplied
+emailAddress   =  optional
+
+[ policy_loose ]
+countryName   = optional
+stateOrProvinceName  = optional
+localityName   = optional
+organizationName  = optional
+organizationalUnitName   = optional
+commonName   = supplied
+emailAddress   = optional
+
+[ req ]
+#Options for the req tool, man req.
+default_bits   = 2048
+distinguished_name  = req_distinguished_name
+string_mask   = utf8only
+default_md   =  sha256
+#Extension to add when the -x509 option is used.
+x509_extensions   = v3_ca
+
+[ req_distinguished_name ]
+countryName                     = Country Name (2 letter code)
+stateOrProvinceName             = State or Province Name
+localityName                    = Locality Name
+0.organizationName              = Organization Name
+organizationalUnitName          = Organizational Unit Name
+commonName                      = Common Name
+emailAddress                    = Email Address
+countryName_default  = GB
+stateOrProvinceName_default = England
+0.organizationName_default = TheUrbanPenguin Ltd
+
+[ v3_ca ]
+#Extensions to apply when createing root ca
+#Extensions for a typical CA, man x509v3_config
+subjectKeyIdentifier  = hash
+authorityKeyIdentifier  = keyid:always,issuer
+basicConstraints  = critical, CA:true
+keyUsage   =  critical, digitalSignature, cRLSign, keyCertSign
+
+[ v3_intermediate_ca ]
+#Extensions to apply when creating intermediate or sub-ca
+#Extensions for a typical intermediate CA, same man as above
+subjectKeyIdentifier  = hash
+authorityKeyIdentifier  = keyid:always,issuer
+#pathlen:0 ensures no more sub-ca can be created below an intermediate
+basicConstraints  = critical, CA:true, pathlen:0
+keyUsage   = critical, digitalSignature, cRLSign, keyCertSign
+
+[ server_cert ]
+#Extensions for server certificates
+basicConstraints  = CA:FALSE
+nsCertType   = server
+nsComment   =  "OpenSSL Generated Server Certificate"
+subjectKeyIdentifier  = hash
+authorityKeyIdentifier  = keyid,issuer:always
+keyUsage   =  critical, digitalSignature, keyEncipherment
+extendedKeyUsage  = serverAuth
+
+========================================
+
+----------Create the intermediate CA
+openssl req -config sub-ca.conf -new -key private/sub-ca.key -sha256 -out csr/sub-ca.csr
+
+
+cd /root/ca/root-ca/
+
+----------------------Create the CA by Auth. RootCA
+openssl ca -config root-ca.conf -extensions v3_intermediate_ca -days 3650 -notext -in ../sub-ca/csr/sub-ca.csr -out ../sub-ca/certs/sub-ca.crt
+
+----------------------READ
+openssl x509 -noout -text -in ../sub-ca/certs/sub-ca.crt
+
+
+-----------------Create Server certificate
+
+
+----Intermediate-signing req-------
+cd ../server/
+openssl req -key private/server.key -new -sha256 -out csr/server.csr
+
+
+-------------Signing from subCA--------
+cd ../sub-ca
+openssl ca -config sub-ca.conf -extensions server_cert -days 365 -notext -in ../server/csr/server.csr -out ../server/certs/server.crt
+
+------SAme file .pem-----
+cat index
+ls newcerts/
+
+
+------------------For ngine------chained
+cd ../server/certs
+ls
+cat server.crt ../../sub-ca/certs/sub-ca.crt > chained.crt
+
+cat server.crt ../../sub-ca/certs/sub-ca.crt ../../root-ca/certs/ca.crt > root_chained.crt
+
+
+--------------Update host-----------------------------------------------------
+nano /etc/hosts
+127.0.1.3	www.verysecureserver.com
+
+
+-------------Generate a server on Listening on port 443--------------
+cd ..
+openssl s_server -accept 443 -www -key private/server.key -cert certs/server.crt -CAfile ../sub-ca/certs/sub-ca.crt
+
+------------------copy Cert from root-ca to 
+cp ca/root-ca/certs/ca.crt /usr/local/share/ca-certificates/
+update-ca-certificates -v
+
+
+
+
+==================================================XAMPP========================
+
+
+
+cp /root/ca/root-ca/newcerts/25F52279B5BE85F3707A593E344D17DB.pem ~ubu/Cert_1
+cp /root/ca/sub-ca/newcerts/764689A7D332BA7794CBCB8754831177.pem ~ubu/Cert_1
+
+
+cp /root/ca/root-ca/certs/ca.crt ~ubu/Cert_EWUBD/crt
+cp /root/ca/sub-ca/certs/sub-ca.crt ~ubu/Cert_EWUBD/crt
+cp /root/ca/server/certs/chained.crt ~ubu/Cert_EWUBD/crt
+cp /root/ca/server/certs/server.crt ~ubu/Cert_EWUBD/crt
+cp /root/ca/server/private/server.key ~ubu/Cert_EWUBD/crt
+
+
+
+------------------------------------------------------
+
+
+
+
+sudo nano /opt/lampp/etc/extra/httpd-ssl.conf 
+
+/home/kali1/Cert_1/crt/
+
+Next go to this location
+--------------------------------------------
+sudo -i
+cd /opt/lampp/etc/extra
+chmod 777 httpd-ssl.conf 
+nano httpd-ssl.conf
+
+line 106
+---------
+change server.crt location with your server.crt file location
+{106 SSLCertificateFile "/home/ubu/Cert_1/crt/server.crt"}
+
+line 116
+---------
+change server.key location with your server.key file location
+{116 SSLCertificateKeyFile "/home/ubu/Cert_1/crt/server.key"}
+
+line 136
+---------
+change full line with your location
+{136 SSLCACertificatePath "/home/ubu/Cert_1/crt"}
+
+--------------------------
+For auto redirect to https
+---------------------------
+<VirtualHost _default_:80>
+ServerName www.example.com:80
+ServerAdmin you@example.com
+Redirect permanent / https://www.verysecureserver.com
+</VirtualHost>
+
+
+curl http://www.verysecureserver.com
+
+===============================================================================
+
+
+=================================Apache2==========================================
+
+# Don't need to repeat if already created
+cat /root/ca/server/certs/server.crt /root/ca/sub-ca/certs/sub-ca.crt /root/ca/root-ca/certs/ca.crt > /root/ca/server/certs/root_chained.crt
+
+cp /root/ca/server/certs/server.crt /etc/ssl/certs/ewubdca.crt
+cp /root/ca/server/private/server.key /etc/ssl/private/ewubdca.key
+cp /root/ca/server/certs/chained.crt /etc/ssl/certs/AcmeSubChain_EWUBD.crt
+cp /root/ca/server/certs/root_chained.crt /etc/ssl/certs/AcmeRootChain_EWUBD.crt
+
+
+-----------------------
+
+sudo nano /etc/apache2/sites-available/ewubdca-ssl.conf
+
+<VirtualHost *:443>
+    ServerName www.ewubdca.com
+    DocumentRoot /var/www/ewubdca/ewubdca
+
+    SSLEngine on
+    #SSLCertificateFile /etc/ssl/certs/ewubdca.crt
+    SSLCertificateFile /etc/ssl/certs/AcmeRootChain_EWUBD.crt
+    SSLCertificateKeyFile /etc/ssl/private/ewubdca.key
+
+    #SSLCertificateChainFile /etc/ssl/certs/AcmeRootChain_EWUBD.crt
+</VirtualHost>
+
+----------------------------------------------
+
+sudo nano /etc/apache2/sites-available/www.ewubdca.conf
+
+	redirect / https://www.ewubdca.com
+
+------------------------------------------------------
+
+a2ensite ewubdca-ssl.conf
+
+systemctl reload apache2
+systemctl restart apache2
+
+
+
+=====================================MORE SERVER=================================
+
+mkdir /root/ca/server1
+
+
+
+
+
+
+
+

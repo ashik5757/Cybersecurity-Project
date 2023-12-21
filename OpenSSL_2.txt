@@ -1,0 +1,173 @@
+openssl genpkey -algorithm RSA -out acme-root-ca-key.pem
+openssl req -new -x509 -key acme-root-ca-key.pem -out acme-root-ca.pem -days 3650 -extensions v3_ca
+
+--------------------------------------------------
+nano v3.ext
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:TRUE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+
+
+openssl genpkey -algorithm RSA -out acme-sub-ca-key.pem
+openssl req -new -key acme-sub-ca-key.pem -out acme-sub-ca-csr.pem
+
+openssl x509 -req -in acme-sub-ca-csr.pem -CA acme-root-ca.pem -CAkey acme-root-ca-key.pem -out acme-sub-ca.pem -days 365 -extfile v3.ext //-extensions v3_ca// no need
+
+//openssl x509 -req -in acme-sub-ca-csr.pem -CA acme-root-ca.pem -CAkey acme-root-ca-key.pem -out acme-sub-ca.pem -days 365 -extfile <(printf "subjectKeyIdentifier=hash\nauthorityKeyIdentifier=keyid,issuer\nbasicConstraints=CA:TRUE\n") -extensions v3_intermediate_ca
+
+-----------------------------------------------------------------------------------
+sudo nano ewubdca-san.cnf
+
+
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+
+[alt_names]
+DNS.1 = www.ewubdca.com
+DNS.2 = apply.ewubdca.com
+DNS.3 = download.ewubdca.com
+
+--------------------------------------------------------------------------
+sudo nano ewubdca-san.cnf
+
+[req]
+req_extensions = req_ext
+
+[req_ext]
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = www.ewubdca.com
+DNS.2 = apply.ewubdca.com
+DNS.3 = download.ewubdca.com
+---------
+[SAN]
+subjectAltName=DNS:www.ewubdca.com,DNS:apply.ewubdca.com,DNS:download.ewubdca.com
+--
+openssl req -new -key ewubdca-key.pem -config ewubdca-san.cnf -reqexts SAN -out ewubdca-csr.pem
+
+-----------------------------------
+sudo nano ewubdca-san-v3.ext
+
+authorityKeyIdentifier=keyid,issuer
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+----------------------------------------------------------------------------------
+//Server 22
+# Create a new CSR with the specified key and configuration file
+openssl req -new -key ewubdca-key.pem -out ewubdca-csr.pem -config ewubdca-san.cnf
+
+# Create a certificate from the CSR, signing it with the specified CA and extensions from the config file
+openssl x509 -req -in ewubdca-csr.pem -CA acme-sub-ca.pem -CAkey acme-sub-ca-key.pem -out ewubdca.pem -days 365 -extfile ewubdca-san.cnf -extensions req_ext
+
+
+--------------------------------------------------------------------------
+//Server 33
+
+openssl genpkey -algorithm RSA -out ewubdca-key.pem
+openssl req -new -key ewubdca-key.pem -out ewubdca-csr.pem
+openssl x509 -req -in ewubdca-csr.pem -CA acme-sub-ca.pem -CAkey acme-sub-ca-key.pem -out ewubdca.pem -days 365 -extfile ewubdca-san.cnf  //-extensions req_ext
+------------------------------------------------------------------------------------------
+
+openssl x509 -in acme-root-ca.pem -text -noout
+openssl x509 -in acme-sub-ca.pem -text -noout
+openssl x509 -in ewubdca.pem -text -noout
+
+---------------------------------------
+cd etc/ssl/certs
+rm ewubdca.crt ewubdca.pem ewubdca-subca-chain.pem AcmeSubCA.crt AcmeRootChain_EWUBD.crt Acme.crt
+
+
+----------------------------------------
+
+cat acme-sub-ca.pem acme-root-ca.pem > ewubdca-subca-chain.pem
+cp ewubdca-subca-chain.pem /etc/ssl/certs/ewubdca-subca-chain.pem
+
+cp acme-root-ca.pem /etc/ssl/certs/acme-root-ca.pem
+cp acme-sub-ca.pem /etc/ssl/certs/acme-sub-ca.pem
+
+cp acme-root-ca-key.pem /etc/ssl/private/acme-root-ca-key.pem
+cp acme-sub-ca-key.pem /etc/ssl/private/acme-sub-ca-key.pem
+
+------
+sudo rm /etc/ssl/certs/ewubdca.pem
+sudo cp ewubdca.pem /etc/ssl/certs/
+sudo ln -s /etc/ssl/certs/ewubdca.pem /path/to/new/file.pem
+------
+cp ewubdca.pem /etc/ssl/certs/ewubdca.pem
+cp ewubdca-key.pem /etc/ssl/private/ewubdca-key.pem
+
+
+cp acme-root-ca.pem /usr/local/share/ca-certificates/acme-root-ca.pem
+
+
+sudo gedit /etc/apache2/sites-available/ewubdca-ssl.conf
+sudo gedit /etc/apache2/sites-enabled/ewubdca-ssl.conf
+
+<VirtualHost *:443>
+    ServerName www.ewubdca.com
+    DocumentRoot /var/www/ewubdca/ewubdca
+
+    SSLEngine on
+
+    SSLCertificateFile /etc/ssl/certs/ewubdca.pem
+    SSLCertificateKeyFile /etc/ssl/private/ewubdca-key.pem
+    SSLCertificateChainFile /etc/ssl/certs/ewubdca-subca-chain.pem
+
+</VirtualHost>
+
+
+sudo service apache2 restart
+
+
+
+
+
+--------------------------------------DELETE--------------------------------
+cd /etc/ssl/certs/
+rm ewubdca.crt ewubdca.pem ewubdca-subca-chain.pem
+rm Acme.crt acme-root-ca.pem AcmeRootChain_EWUBD.crt AcmeSubCA.crt acme-sub-ca.pem subca-chain.pem
+
+
+cd /etc/ssl/private
+rm acme-root-ca-key.pem acme-sub-ca-key.pem ewubdca.pem
+rm acme-root-ca.pem ewubdca-key.pem
+
+cd /usr/local/share/ca-certificates/
+rm acme-root-ca.pem
+
+
+sudo apt-get install --reinstall ca-certificates
+sudo update-ca-certificates --fresh
+
+
+
+
+rm /etc/apache2/sites-enabled/ewubdca-ssl.conf
+
+<VirtualHost *:443>
+    ServerName www.ewubdca.com
+    DocumentRoot /var/www/ewubdca/ewubdca
+
+    #SSLEngine on
+    
+    #SSLCertificateFile /etc/ssl/certs/ewubdca.crt
+    #SSLCertificateFile /etc/ssl/certs/AcmeRootChain_EWUBD.crt
+    #SSLCertificateKeyFile /etc/ssl/private/ewubdca.key
+
+    #SSLCertificateChainFile /etc/ssl/certs/AcmeRootChain_EWUBD.crt
+    
+    #SSLCertificateFile /etc/ssl/certs/ewubdca.pem
+    #SSLCertificateKeyFile /etc/ssl/private/ewubdca-key.pem
+    #SSLCertificateChainFile /etc/ssl/certs/ewubdca-subca-chain.pem
+
+</VirtualHost>
+
+
+
+gedit /etc/apache2/sites-enabled/www.ewubdca.conf
+#redirect / https://www.ewubdca.com
+

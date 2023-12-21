@@ -1,0 +1,114 @@
+ss -ntl
+
+sudo ufw status
+
+sudo ufw allow 22
+sudo ufw allow 53
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw allow 3000
+
+
+sudo ufw enable
+
+----------------------------------
+sudo ufw delete allow 3000
+sudo ufw delete deny 3000
+----------------------------------
+
+sudo ufw default deny incoming
+sudo ufw reload
+
+ss -ntl
+
+
+
+
+===========================SSH==========================================
+
+sudo apt update
+sudo apt install openssh-server
+
+
+-----------------------
+sudo nano /etc/ssh/sshd_config
+Port 3000
+
+PermitRootLogin no
+PasswordAuthentication yes
+----------------------------------
+sudo systemctl restart ssh
+
+
+---------From client
+sudo apt install openssh-client
+
+
+ssh -p 3000 ubu@192.168.0.148
+
+ssh -p 3000 root@192.168.0.148	// Direct root login will not work 
+
+=======================================IDS======================================
+
+sudo apt install snort
+
+service snort status
+
+sudo systemctl stop snort
+sudo systemctl enable snort
+sudo systemctl start snort
+
+---------------------Uninstall----------------------
+sudo apt purge snort
+sudo apt autoremove
+
+sudo apt remove snort
+sudo apt autoclean && sudo apt autoremove
+
+sudo rm -r /etc/snort
+
+---------------------ERROR reinstall------------------------
+sudo mkdir -p /etc/snort
+sudo touch /etc/snort/snort.conf
+sudo chown -R snort:snort /etc/snort
+
+sudo dpkg --configure -a
+sudo apt update
+sudo apt install snort
+
+sudo systemctl restart snort
+sudo journalctl -xe | grep snort
+
+
+------------------------------------------------------
+
+
+sudo nano /etc/snort/snort.conf
+
+# Setup the network addresses you are protecting
+ipvar HOME_NET any
+# Set up the external network addresses. Leave as "any" in most situations
+ipvar EXTERNAL_NET any
+
+# Path to dynamic preprocessor libraries
+dynamicpreprocessor directory /usr/lib/snort_dynamicpreprocessor
+
+var RULE_PATH /etc/snort/rules
+
+
+--------------------------------------------
+
+
+sudo mkdir /var/log/snort
+sudo mkdir /var/snort
+sudo mkdir /var/snort/rules
+
+
+
+sudo nano /etc/snort/rules/local.rules
+
+
+sudo snort -A console -q -u snort -g snort -c /etc/snort/snort.conf -i 192.168.0.148
+
+
+

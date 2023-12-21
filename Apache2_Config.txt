@@ -1,0 +1,138 @@
+sudo a2enmod rewrite
+sudo a2enmod headers
+sudo a2enmod ssl          # If you plan to use HTTPS
+sudo systemctl restart apache2
+
+=====================================================
+
+sudo mkdir -p /var/www/ewubdca/ewubdca
+sudo mkdir -p /var/www/ewubdca/apply
+sudo mkdir -p /var/www/ewubdca/download
+
+sudo mkdir -p /var/www/bbc
+sudo mkdir -p /var/www/cnn
+====================================================
+
+sudo nano /var/www/ewubdca/ewubdca/index.php
+sudo nano /var/www/ewubdca/apply/index.php
+sudo nano /var/www/ewubdca/download/index.php
+
+sudo nano /var/www/bbc/index.html
+sudo nano /var/www/cnn/index.html
+
+==========================================================
+# chown -R ubu_ser:ubu_ser: Changes the ownership of the directory and its contents to the user "ubu_ser" and the group "ubu_ser."
+# chmod -R u+rwx: Grants read, write, and execute permissions to the owner (ubu_ser).
+# chmod -R go=: Removes read, write, and execute permissions for the group and others, restricting their access
+==========================================================
+
+sudo chmod 644 /var/www/ewubdca/ewubdca/index.php
+sudo chmod 644 /var/www/ewubdca/apply/index.php
+sudo chmod 644 /var/www/ewubdca/download/index.php
+
+sudo chmod 644 /var/www/bbc/index.html
+sudo chmod 644 /var/www/cnn/index.html
+
+
+
+// have to be fix by ubu_ser
+sudo chmod 755 /var/www/ewubdca
+
+sudo chmod 755 /var/www/bbc
+sudo chmod 755 /var/www/cnn
+
+=============================================================
+
+# For the first path
+sudo chown -R ubu_ser:ubu_ser /var/www/ewubdca
+sudo chmod -R u+rwx /var/www/ewubdca
+sudo chmod -R go= /var/www/ewubdca
+
+# For the second path
+sudo chown -R ubu_ser:ubu_ser /var/www/bbc
+sudo chmod -R u+rwx /var/www/bbc
+sudo chmod -R go= /var/www/bbc
+
+# For the third path
+sudo chown -R ubu_ser:ubu_ser /var/www/cnn
+sudo chmod -R u+rwx /var/www/cnn
+sudo chmod -R go= /var/www/cnn
+
+====================================================================
+
+sudo nano /etc/apache2/sites-available/www.ewubdca.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@ewubdca
+    ServerName www.ewubdca.com
+    DocumentRoot /var/www/ewubdca/ewubdca
+    ErrorLog ${APACHE_LOG_DIR}/ewubdca_error.log
+    CustomLog ${APACHE_LOG_DIR}/ewubdca_access.log combined
+</VirtualHost>
+
+
+sudo nano /etc/apache2/sites-available/apply.ewubdca.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@apply-ewubdca
+    ServerName apply.ewubdca.com
+    DocumentRoot /var/www/ewubdca/apply
+    ErrorLog ${APACHE_LOG_DIR}/apply_ewubdca_error.log
+    CustomLog ${APACHE_LOG_DIR}/apply_ewubdca_access.log combined
+</VirtualHost>
+
+sudo nano /etc/apache2/sites-available/download.ewubdca.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@download-ewubdca
+    ServerName download.ewubdca.com
+    DocumentRoot /var/www/ewubdca/download
+    ErrorLog ${APACHE_LOG_DIR}/download_ewubdca_error.log
+    CustomLog ${APACHE_LOG_DIR}/download_ewubdca_access.log combined
+</VirtualHost>
+
+
+
+
+
+sudo nano /etc/apache2/sites-available/bbc.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@bbc
+    ServerName www.bbc.com
+    DocumentRoot /var/www/bbc
+    ErrorLog ${APACHE_LOG_DIR}/bbc_error.log
+    CustomLog ${APACHE_LOG_DIR}/bbc_access.log combined
+</VirtualHost>
+
+sudo nano /etc/apache2/sites-available/cnn.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@cnn
+    ServerName www.cnn.com
+    DocumentRoot /var/www/cnn
+    ErrorLog ${APACHE_LOG_DIR}/cnn_error.log
+    CustomLog ${APACHE_LOG_DIR}/cnn_access.log combined
+</VirtualHost>
+
+
+==============================================================
+
+
+#Enable
+sudo a2ensite www.ewubdca.conf
+sudo a2ensite apply.ewubdca.conf
+sudo a2ensite download.ewubdca.conf
+sudo a2ensite bbc.conf
+sudo a2ensite cnn.conf
+
+#Disable
+sudo a2dissite 000-default.conf
+
+
+#Update Host
+sudo nano /etc/hosts
+
+
+sudo systemctl restart apache2
+sudo service apache2 restart
