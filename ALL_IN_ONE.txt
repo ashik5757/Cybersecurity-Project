@@ -1,0 +1,962 @@
+
+===============================ADD NEW USER=====================================
+
+
+#Add new Users For Apache Server and DNS:
+sudo adduser ubu_ser
+sudo adduser ubu_dns
+
+#Give Root privileges to the new user:
+sudo usermod -aG sudo ubu_ser
+sudo usermod -aG sudo ubu_dns
+
+
+
+#Login as Apache Server to config :
+su - ubu_ser
+
+
+
+==================================Apache2 Config================================
+#Install Apache2:
+sudo apt update
+sudo apt install apache2
+
+
+#Enable the mods required:
+sudo a2enmod rewrite
+sudo a2enmod headers
+sudo a2enmod ssl
+
+sudo systemctl restart apache2
+
+-------------------------------------------------
+
+#Creating directories for websites :
+
+sudo mkdir -p /var/www/ewubdca/ewubdca
+sudo mkdir -p /var/www/ewubdca/apply
+sudo mkdir -p /var/www/ewubdca/download
+
+sudo mkdir -p /var/www/bbc
+sudo mkdir -p /var/www/cnn
+
+sudo mkdir -p /var/www/verysecureserver
+
+
+ctrl + x to save
+then y
+then enter
+
+-------------------------------------------------
+
+#Creating all the index.html file for websites
+
+sudo nano /var/www/ewubdca/ewubdca/index.php
+sudo nano /var/www/ewubdca/apply/index.php
+sudo nano /var/www/ewubdca/download/index.php
+
+sudo nano /var/www/bbc/index.html
+sudo nano /var/www/cnn/index.html
+
+sudo nano /var/www/verysecureserver/index.html
+
+-------------------------------------------
+
+#Creating Virtual Host for each websites
+
+--------------------------------
+sudo nano /etc/apache2/sites-available/www.ewubdca.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@ewubdca
+    ServerName www.ewubdca.com
+    DocumentRoot /var/www/ewubdca/ewubdca
+    ErrorLog ${APACHE_LOG_DIR}/ewubdca_error.log
+    CustomLog ${APACHE_LOG_DIR}/ewubdca_access.log combined
+</VirtualHost>
+
+--------------------------------
+
+sudo nano /etc/apache2/sites-available/apply.ewubdca.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@apply-ewubdca
+    ServerName apply.ewubdca.com
+    DocumentRoot /var/www/ewubdca/apply
+    ErrorLog ${APACHE_LOG_DIR}/apply_ewubdca_error.log
+    CustomLog ${APACHE_LOG_DIR}/apply_ewubdca_access.log combined
+</VirtualHost>
+
+
+--------------------------------
+
+sudo nano /etc/apache2/sites-available/download.ewubdca.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@download-ewubdca
+    ServerName download.ewubdca.com
+    DocumentRoot /var/www/ewubdca/download
+    ErrorLog ${APACHE_LOG_DIR}/download_ewubdca_error.log
+    CustomLog ${APACHE_LOG_DIR}/download_ewubdca_access.log combined
+</VirtualHost>
+
+
+--------------------------------
+
+sudo nano /etc/apache2/sites-available/bbc.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@bbc
+    ServerName www.bbc.com
+    DocumentRoot /var/www/bbc
+    ErrorLog ${APACHE_LOG_DIR}/bbc_error.log
+    CustomLog ${APACHE_LOG_DIR}/bbc_access.log combined
+</VirtualHost>
+
+
+--------------------------------
+
+sudo nano /etc/apache2/sites-available/cnn.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@cnn
+    ServerName www.cnn.com
+    DocumentRoot /var/www/cnn
+    ErrorLog ${APACHE_LOG_DIR}/cnn_error.log
+    CustomLog ${APACHE_LOG_DIR}/cnn_access.log combined
+</VirtualHost>
+
+
+
+--------------------------------
+
+
+
+sudo nano /etc/apache2/sites-available/verysecureserver.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@cnn
+    ServerName www.verysecureserver.com
+    DocumentRoot /var/www/verysecureserver
+    ErrorLog ${APACHE_LOG_DIR}/verysecureserver_error.log
+    CustomLog ${APACHE_LOG_DIR}/verysecureserver_access.log combined
+</VirtualHost>
+
+
+--------------------------------
+
+#Enable all the sites:
+sudo a2ensite www.ewubdca.conf
+sudo a2ensite apply.ewubdca.conf
+sudo a2ensite download.ewubdca.conf
+sudo a2ensite bbc.conf
+sudo a2ensite cnn.conf
+sudo a2ensite verysecureserver.conf
+
+#Disable the default:
+sudo a2dissite 000-default.conf
+
+-------------------------------
+#Check the public IP:
+ifconfig
+
+#Public IP : 192.168.0.117
+
+
+#Update Host File:
+sudo nano /etc/hosts
+
+192.168.0.117   www.ewubdca.com
+192.168.0.117   apply.ewubdca.com
+192.168.0.117   download.ewubdca.com
+192.168.0.117   www.bbc.com
+192.168.0.117   www.cnn.com
+192.168.0.117   www.verysecureserver.com
+
+
+-------------------------------
+#Restart Apache2:
+sudo systemctl restart apache2
+OR,
+sudo service apache2 restart
+
+
+-------------------------------
+
+#Ping the sites:
+ping www.ewubdca.com
+nslookup www.ewubdca.com
+
+
+
+
+=============================DNS Config============================================
+
+#Login as DNS Server to config :
+su - ubu_dns
+
+
+
+#install bind9:
+sudo apt update
+sudo apt-get install bind9
+
+
+---------------------------------------------
+#Edit Bind9 config file:
+sudo nano /etc/bind/named.conf.local
+
+zone "ewubdca.com" IN {
+    type master;
+    file "/etc/bind/db.ewubdca";
+};
+
+zone "cnn.com" IN {
+    type master;
+    file "/etc/bind/db.cnn";
+};
+
+zone "bbc.com" IN {
+    type master;
+    file "/etc/bind/db.bbc";
+};
+
+
+zone "verysecureserver.com" IN {
+    type master;
+    file "/etc/bind/db.verysecureserver";
+};
+
+
+----------------------------------------
+#Create Zone Files for ewubdca:
+
+sudo nano /etc/bind/db.ewubdca
+
+$TTL    604800
+@       IN      SOA     ns1.ewubdca.com. root.ewubdca.com. (
+                              2023121001
+                              604800
+                              86400
+                              2419200
+                              604800 )
+
+@       IN      NS      ns1.ewubdca.com.
+ns1     IN      A       192.168.0.117
+www     IN      A       192.168.0.117
+apply   IN      A       192.168.0.117
+download IN     A       192.168.0.117
+@       IN      AAAA    ::1
+
+
+----------------------------------------
+#Create Zone Files for CNN
+
+
+sudo nano /etc/bind/db.cnn
+
+$TTL    604800
+@       IN      SOA     ns1.cnn.com. root.cnn.com. (
+                            2023121001
+                            604800
+                            86400
+                            2419200
+                            604800 )
+
+@       IN      NS      ns1.cnn.com.
+ns1     IN      A       192.168.0.117
+www     IN      A       192.168.0.117
+@       IN      AAAA    ::1
+
+
+----------------------------------------
+#Create Zone Files for BBC
+
+
+sudo nano /etc/bind/db.bbc
+
+$TTL    604800
+@       IN      SOA     ns1.bbc.com. root.bbc.com. (
+                            2023121001
+                            604800
+                            86400
+                            2419200
+                            604800 )
+
+@       IN      NS      ns1.bbc.com.
+ns1     IN      A       192.168.0.117
+www     IN      A       192.168.0.117
+@       IN      AAAA    ::1
+
+
+
+
+----------------------------------------
+#Create Zone Files for Verysecureserver
+
+
+sudo nano /etc/bind/db.verysecureserver
+
+$TTL    604800
+@       IN      SOA     ns1.verysecureserver.com. root.verysecureserver.com. (
+                            2023121001
+                            604800
+                            86400
+                            2419200
+                            604800 )
+
+@       IN      NS      ns1.verysecureserver.com.
+ns1     IN      A       192.168.0.117
+www     IN      A       192.168.0.117
+@       IN      AAAA    ::1
+
+
+
+------------------------Reverse Lookup------------------
+
+#Add reverse zone in config file:
+sudo nano /etc/bind/named.conf.local
+
+zone "0.168.192.in-addr.arpa" IN {
+    type master;
+    file "/etc/bind/db.0.168.192";
+};
+
+-----------------------------------------
+#Create reverse zone files:
+sudo nano /etc/bind/db.0.168.192
+
+
+$TTL    604800
+@       IN      SOA     ns1.ewubdca.com. root.ewubdca.com. (
+                            2023121003
+                            604800
+                            86400
+                            2419200
+                            604800 )
+
+@       IN      NS     ns1.ewubdca.com.
+1      IN      PTR     www.ewubdca.com.
+2      IN      PTR     apply.ewubdca.com.
+3      IN      PTR     download.ewubdca.com.
+4      IN      PTR     www.cnn.com.
+5      IN      PTR     www.bbc.com.
+6      IN      PTR     www.verysecureserver.com.
+
+
+---------------------------------------------------
+
+#Restart the Bind9 server:
+sudo service bind9 reload
+sudo service bind9 restart
+
+#Restart the apache2 server:
+sudo service apache2 restart
+
+
+-------------------------------------------
+#Test all the sites from HOST:
+
+nslookup www.ewubdca.com
+nslookup www.bbc.com
+nslookup www.cnn.com
+nslookup www.verysecureserver.com
+
+
+ping www.ewubdca.com
+ping apply.ewubdca.com
+ping download.ewubdca.com
+ping www.bbc.com
+ping www.cnn.com
+ping www.verysecureserver.com
+
+
+------------------------NO NEED IF tests are OK---------------------------------------
+
+sudo ufw status
+sudo ufw enable
+sudo ufw allow bind9
+
+
+---------------------NO NEED IF tests are OK------------------------------
+
+
+========Reset resolv.conf============
+sudo systemctl restart systemd-resolved
+
+==================then copy base to resolv.conf
+sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+
+sudo nano /etc/resolv.conf
+
+nameserver 192.168.0.117
+nameserver 192.168.0.1
+search localdomain
+
+
+---------------------------------------------------------
+#Test all the sites from Client:
+
+nslookup www.ewubdca.com
+nslookup www.bbc.com
+nslookup www.cnn.com
+nslookup www.verysecureserver.com
+
+
+ping www.ewubdca.com
+ping apply.ewubdca.com
+ping download.ewubdca.com
+ping www.bbc.com
+ping www.cnn.com
+ping www.verysecureserver.com
+
+
+
+
+
+===============================Create Certificate Authority====================================
+
+#Create Folders:
+sudo su
+cd
+mkdir -p ca/{root-ca,sub-ca,ewubdca-server}
+cd ca
+
+
+#Create Config file for CA:
+sudo nano acmeca.cnf
+
+
+[req]
+default_bits       = 4096
+encrypt_key        = yes
+distinguished_name = req_distinguished_name
+x509_extensions    = v3_ca
+
+[req_distinguished_name]
+countryName            = Country Name (2 letter code)
+countryName_default    = US
+stateOrProvinceName    = State or Province Name (full name)
+stateOrProvinceName_default = California
+localityName           = Locality Name (eg, city)
+localityName_default   = San Francisco
+organizationName       = Organizational Name (eg, Company)
+organizationName_default  = ACME
+organizationalUnitName = Organizational Unit Name (eg, section)
+organizationalUnitName_default = AcmeCA
+commonName             = Common Name (e.g. server FQDN or YOUR name)
+commonName_default     = AcmeCA
+emailAddress           = Email Address
+emailAddress_default   = admin@acmeca.com
+
+[v3_ca]
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always,issuer
+basicConstraints = critical,CA:TRUE
+keyUsage         = keyCertSign, cRLSign
+
+
+-------------------------------------------------------
+#Create Config file for Sub CA:
+sudo nano acmesubca.cnf
+
+
+[req]
+default_bits       = 4096
+encrypt_key        = yes
+distinguished_name = req_distinguished_name
+x509_extensions    = v3_ca
+
+[req_distinguished_name]
+countryName            = Country Name (2 letter code)
+countryName_default    = US
+stateOrProvinceName    = State or Province Name (full name)
+stateOrProvinceName_default = California
+localityName           = Locality Name (eg, city)
+localityName_default   = San Francisco
+organizationName       = Organizational Name (eg, Company)
+organizationName_default  = ACME
+organizationalUnitName = Organizational Unit Name (eg, section)
+organizationalUnitName_default = AcmeSubCA
+commonName             = Common Name (e.g. server FQDN or YOUR name)
+commonName_default     = AcmeSubCA
+emailAddress           = Email Address
+emailAddress_default   = admin@acmesubca.com
+
+[v3_ca]
+subjectKeyIdentifier=hash
+authorityKeyIdentifier=keyid:always,issuer
+basicConstraints = critical,CA:TRUE
+keyUsage         = keyCertSign, cRLSign
+
+
+
+-------------------------------------------------------
+
+#Create config file for Server(EWUBDCA)
+sudo nano www.ewubdca.com.cnf
+
+[req]
+default_bits       = 4096
+encrypt_key        = yes
+distinguished_name = req_distinguished_name
+x509_extensions    = v3_req
+
+[req_distinguished_name]
+countryName            = Country Name (2 letter code)
+countryName_default    = BD
+stateOrProvinceName    = State or Province Name (full name)
+stateOrProvinceName_default = Bangladesh
+localityName           = Locality Name (eg, city)
+localityName_default   = Dhaka
+organizationName       = Organizational Name (eg, Company)
+organizationName_default  = EWU
+organizationalUnitName = Organizational Unit Name (eg, section)
+organizationalUnitName_default = EWUBD
+commonName             = Common Name (e.g. server FQDN or YOUR name)
+commonName_default     = www.ewubdca.com
+emailAddress           = Email Address
+emailAddress_default   = admin@ewubdca.com
+
+[v3_req]
+authorityKeyIdentifier  = keyid,issuer:always
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1   = www.ewubdca.com
+DNS.2   = apply.ewubdca.com
+DNS.3   = download.ewubdca.com
+
+
+
+------------------------------------------------------------
+
+#In root directory:
+sudo su
+cd ca
+
+
+#Create Root CA
+openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 \
+  -nodes -keyout root-ca/AcmeCA.key -out root-ca/AcmeCA.crt -config acmeca.cnf -extensions v3_ca
+
+
+
+# Create CSR for Sub-CA : 
+openssl req -new -newkey rsa:4096 -sha256 -days 3650 \
+  -nodes -keyout sub-ca/AcmeSubCA.key -out sub-ca/AcmeSubCA.csr -config acmesubca.cnf
+
+# Signing CSR of Sub-CA by CA : 
+openssl x509 -req -in sub-ca/AcmeSubCA.csr -CA root-ca/AcmeCA.crt -CAkey root-ca/AcmeCA.key \
+  -CAcreateserial -out sub-ca/AcmeSubCA.crt -days 365 -sha256 -extfile acmesubca.cnf -extensions v3_ca
+
+
+
+
+
+#Create CSR for Server EWUBDCA :
+openssl req -new -newkey rsa:4096 -sha256 -days 365 \
+  -nodes -keyout ewubdca-server/www.ewubdca.com.key -out ewubdca-server/www.ewubdca.com.csr \
+  -config www.ewubdca.com.cnf
+
+# Signing CSR of Server EWUBDCA by Sub-CA :
+openssl x509 -req -in ewubdca-server/www.ewubdca.com.csr -CA sub-ca/AcmeSubCA.crt -CAkey sub-ca/AcmeSubCA.key \
+  -CAcreateserial -out ewubdca-server/www.ewubdca.com.crt -days 365 -sha256 -extfile www.ewubdca.com.cnf -extensions v3_req
+
+
+
+
+-------------------------------------------------------------------------
+
+
+#Create Chain Certificate of SubCA and CA
+cat sub-ca/AcmeSubCA.crt root-ca/AcmeCA.crt > ewubdca-server/ewubdca-subca-chain.crt
+sudo cp ewubdca-server/ewubdca-subca-chain.crt /etc/ssl/certs/
+
+
+# Copy Root CA and Sub CA certificates
+sudo cp root-ca/AcmeCA.crt /etc/ssl/certs/
+sudo cp sub-ca/AcmeSubCA.crt /etc/ssl/certs/
+
+
+# Copy Root CA and Sub CA private keys
+sudo cp root-ca/AcmeCA.key /etc/ssl/private/
+sudo cp sub-ca/AcmeSubCA.key /etc/ssl/private/
+
+
+
+# Copy Server certificate and private key
+sudo cp ewubdca-server/www.ewubdca.com.crt /etc/ssl/certs/
+sudo cp ewubdca-server/www.ewubdca.com.key /etc/ssl/private/
+
+
+--------------------------------------------
+
+sudo gedit /etc/apache2/sites-available/ewubdca-ssl.conf
+sudo gedit /etc/apache2/sites-enabled/ewubdca-ssl.conf
+
+
+<VirtualHost *:443>
+    ServerName www.ewubdca.com
+    DocumentRoot /var/www/ewubdca/ewubdca
+
+    SSLEngine on
+
+    SSLCertificateFile /etc/ssl/certs/www.ewubdca.com.crt
+    SSLCertificateKeyFile /etc/ssl/private/www.ewubdca.com.key
+    SSLCertificateChainFile /etc/ssl/certs/ewubdca-subca-chain.crt
+
+</VirtualHost>
+
+
+sudo a2ensite ewubdca-ssl.conf
+
+
+
+-----------------------------------------------------------------------------
+
+gedit /etc/apache2/sites-enabled/www.ewubdca.conf
+#Add : redirect / https://www.ewubdca.com
+
+sudo gedit /etc/apache2/sites-enabled/apply.ewubdca.conf
+#Add : redirect / https://apply.ewubdca.com
+
+sudo gedit /etc/apache2/sites-enabled/download.ewubdca.conf
+#Add : redirect / https://download.ewubdca.com
+
+a2ensite www.ewubdca.conf
+a2ensite apply.ewubdca.conf
+a2ensite download.ewubdca.conf
+
+
+sudo service apache2 restart
+
+
+
+
+
+
+
+
+
+============================================= verysecure-server===============================================
+
+sudo su
+cd
+cd ca
+mkdir verysecure-server
+
+------------------------------------
+
+#Create config file for Server(Very Secure Server)
+sudo nano verysecure-server.cnf
+
+[req]
+default_bits       = 4096
+encrypt_key        = yes
+distinguished_name = req_distinguished_name
+x509_extensions    = v3_req
+
+[req_distinguished_name]
+countryName            = Country Name (2 letter code)
+countryName_default    = BD
+stateOrProvinceName    = State or Province Name (full name)
+stateOrProvinceName_default = Bangladesh
+localityName           = Locality Name (eg, city)
+localityName_default   = Dhaka
+organizationName       = Organizational Name (eg, Company)
+organizationName_default  = Ver Secure Server
+organizationalUnitName = Organizational Unit Name (eg, section)
+organizationalUnitName_default = BD Server
+commonName             = Common Name (e.g. server FQDN or YOUR name)
+commonName_default     = www.verysecureserver.com
+emailAddress           = Email Address
+emailAddress_default   = admin@verysecureserver.com
+
+[v3_req]
+authorityKeyIdentifier  = keyid,issuer:always
+basicConstraints=CA:FALSE
+keyUsage = digitalSignature, nonRepudiation, keyEncipherment, dataEncipherment
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1   = www.verysecureserver.com
+
+
+--------------------------------------------------
+
+#Create CSR for Very-Secure-Server :
+openssl req -new -newkey rsa:4096 -sha256 -days 365 \
+  -nodes -keyout verysecure-server/www.verysecureserver.com.key -out verysecure-server/www.verysecureserver.com.csr \
+  -config verysecure-server.cnf
+
+# Signing CSR of Very-Secure-Server by Sub-CA :
+openssl x509 -req -in verysecure-server/www.verysecureserver.com.csr -CA sub-ca/AcmeSubCA.crt -CAkey sub-ca/AcmeSubCA.key \
+  -CAcreateserial -out verysecure-server/www.verysecureserver.com.crt -days 365 -sha256 -extfile verysecure-server.cnf -extensions v3_req
+
+
+----------------------------------------
+
+#Create Chain Certificate of SubCA and CA
+cat sub-ca/AcmeSubCA.crt root-ca/AcmeCA.crt > verysecure-server/verysecure-server-subca-chain.crt
+sudo cp verysecure-server/verysecure-server-subca-chain.crt /etc/ssl/certs/
+
+# Copy Server certificate and private key
+sudo cp verysecure-server/www.verysecureserver.com.crt /etc/ssl/certs/
+sudo cp verysecure-server/www.verysecureserver.com.key /etc/ssl/private/
+
+
+----------------------------------------------------------
+
+sudo gedit /etc/apache2/sites-available/verysecure-server-ssl.conf
+OR
+sudo gedit /etc/apache2/sites-enabled/verysecure-server-ssl.conf
+
+<VirtualHost *:443>
+    ServerName www.verysecureserver.com
+    DocumentRoot /var/www/verysecureserver
+
+    SSLEngine on
+
+    SSLCertificateFile /etc/ssl/certs/www.verysecureserver.com.crt
+    SSLCertificateKeyFile /etc/ssl/private/www.verysecureserver.com.key
+    SSLCertificateChainFile /etc/ssl/certs/verysecure-server-subca-chain.crt
+
+</VirtualHost>
+
+
+sudo a2ensite verysecure-server-ssl.conf
+
+
+
+-----------------------------------------------------------------
+
+sudo gedit /etc/apache2/sites-available/verysecureserver.conf
+#Add : redirect / https://www.verysecureserver.com
+OR---
+sudo gedit /etc/apache2/sites-enabled/verysecureserver.conf
+#Add : redirect / https://www.verysecureserver.com
+
+
+----------------------------------------------------------------
+
+sudo service apache2 restart
+
+
+
+
+
+
+
+
+
+
+
+
+
+=====================================DELETE or Remove ALL the Certificate=======================================
+
+
+#Delete Certificate
+cd /etc/ssl/certs/ 
+rm AcmeCA.crt AcmeSubCA.crt ewubdca-subca-chain.crt verysecure-server-subca-chain.crt
+
+#Delete Key
+sudo cd /etc/ssl/private
+rm AcmeCA.key AcmeSubCA.key www.ewubdca.com.key www.verysecureserver.com.key
+
+
+#Delete SSL Conf
+rm /etc/apache2/sites-enabled/ewubdca-ssl.conf
+rm /etc/apache2/sites-available/ewubdca-ssl.conf
+
+rm /etc/apache2/sites-enabled/verysecure-server-ssl.conf
+
+
+#Edit Sites Conf and remove redirect line:
+sudo gedit /etc/apache2/sites-enabled/www.ewubdca.conf
+#Remove : redirect / https://www.ewubdca.com
+
+sudo gedit /etc/apache2/sites-enabled/verysecureserver.conf
+#Remove : redirect / https://www.verysecureserver.com
+
+
+
+
+
+sudo service apache2 restart
+
+
+
+
+
+
+
+
+
+=====================================Firewall========================================
+
+
+ss -ntl
+
+sudo ufw status
+
+sudo ufw allow 22
+sudo ufw allow 53
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw allow 3000
+
+
+sudo ufw enable
+
+----------------------------------
+sudo ufw delete allow 3000
+sudo ufw delete deny 3000
+----------------------------------
+
+sudo ufw default deny incoming
+sudo ufw reload
+
+ss -ntl
+
+
+
+
+===========================SSH==========================================
+
+sudo apt update
+sudo apt install openssh-server
+
+
+-----------------------
+sudo nano /etc/ssh/sshd_config
+Port 3000
+
+PermitRootLogin no
+PasswordAuthentication yes
+----------------------------------
+sudo systemctl restart ssh
+
+
+---------From client
+sudo apt install openssh-client
+
+
+ssh -p 3000 ubu@192.168.0.148
+
+ssh -p 3000 root@192.168.0.148	// Direct root login will not work 
+
+
+
+
+=======================================IDS======================================
+
+sudo apt install snort
+
+service snort status
+sudo systemctl stop snort
+sudo systemctl enable snort
+sudo systemctl start snort
+
+cd /etc/snort
+
+sudo cp snort.conf snort.conf.backup
+
+# Find all the line and edit it:
+sudo nano snort.conf
+
+ipvar HOME_NET 192.168.0.0/24
+
+
+
+----------------------------------
+
+sudo snort -T -i enp3s0 -c /etc/snort/snort.conf
+
+
+
+
+--------------------------
+
+sudo gedit snort.conf
+
+comment out all the rules: 597 to 717
+
+Output Check:
+
++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Initializing rule chains...
+
+0 Snort rules read
+
+    0 detection rules
+
+    0 decoder rules
+
+    0 preprocessor rules
+
+0 Option Chains linked into 0 Chain Headers
+
++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+----------------------------------------------------------------------
+
+sudo nano /etc/snort/rules/local.rules
+
+
+alert icmp any any -> $HOME_NET any (msg:"Ping Detected"; sid:1001; rev:1;)
+alert tcp any any -> $HOME_NET 3000 (msg:"SSH Authentication Attempted"; sid :1002; rev:1;)
+
+
+# [ $HOME_NET : It will detect all for all ip in network]
+
+alert icmp any any -> 192.168.0.148 any (msg:"Ping Detected"; sid:1001; rev:1;)
+alert tcp any any -> 192.168.0.148 3000 (msg:"SSH Authentication Attempted"; sid :1002; rev:1;)
+
+alert tcp any any -> $HOME_NET 80 (flags: S; msg:"Possible TCP DoS"; flow: stateless; detection_filter: track by_dst, count 70, seconds 10; sid:1003;)
+alert tcp any any -> $HOME_NET 80 (flags: S; msg:"Possible TCP DoS"; flow: stateless; detection_filter: track by_src, count 70, seconds 10; sid:1004)
+
+----------------------------------------------------------
+
+#Show on console :
+sudo snort -q -l /var/log/snort -i enp0s3 -A console -c /etc/snort/snort.conf
+
+
+# Create alert file and write on it :
+sudo snort -q -l /var/log/snort -i enp0s3 -A fast -c /etc/snort/snort.conf
+
+
+
+
+
+-----------------------------Attack---------------------------------------------
+
+sudo apt install hping3
+
+hping3 -h
+
+
+
+#Check the port number of the server
+nslookup www.ewubdca.com
+
+
+
+hping3 --count 15000 --data 120 --syn --win 64 -p 53 --flood --rand-source 192.168.0.148
+
+
+
+
+
+
+
+
+
+
+

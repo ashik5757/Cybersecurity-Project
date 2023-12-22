@@ -1,0 +1,177 @@
+
+#Login as Apache Server to config :
+su - ubu_ser
+
+
+
+==================================Apache2 Config================================
+#Install Apache2:
+sudo apt update
+sudo apt install apache2
+
+
+#Enable the mods required:
+sudo a2enmod rewrite
+sudo a2enmod headers
+sudo a2enmod ssl
+
+sudo systemctl restart apache2
+
+-------------------------------------------------
+
+#Creating directories for websites :
+
+sudo mkdir -p /var/www/ewubdca/ewubdca
+sudo mkdir -p /var/www/ewubdca/apply
+sudo mkdir -p /var/www/ewubdca/download
+
+sudo mkdir -p /var/www/bbc
+sudo mkdir -p /var/www/cnn
+
+sudo mkdir -p /var/www/verysecureserver
+
+
+ctrl + x to save
+then y
+then enter
+
+-------------------------------------------------
+
+#Creating all the index.html file for websites
+
+sudo nano /var/www/ewubdca/ewubdca/index.php
+sudo nano /var/www/ewubdca/apply/index.php
+sudo nano /var/www/ewubdca/download/index.php
+
+sudo nano /var/www/bbc/index.html
+sudo nano /var/www/cnn/index.html
+
+sudo nano /var/www/verysecureserver/index.html
+
+-------------------------------------------
+
+#Creating Virtual Host for each websites
+
+--------------------------------
+sudo nano /etc/apache2/sites-available/www.ewubdca.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@ewubdca
+    ServerName www.ewubdca.com
+    DocumentRoot /var/www/ewubdca/ewubdca
+    ErrorLog ${APACHE_LOG_DIR}/ewubdca_error.log
+    CustomLog ${APACHE_LOG_DIR}/ewubdca_access.log combined
+</VirtualHost>
+
+--------------------------------
+
+sudo nano /etc/apache2/sites-available/apply.ewubdca.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@apply-ewubdca
+    ServerName apply.ewubdca.com
+    DocumentRoot /var/www/ewubdca/apply
+    ErrorLog ${APACHE_LOG_DIR}/apply_ewubdca_error.log
+    CustomLog ${APACHE_LOG_DIR}/apply_ewubdca_access.log combined
+</VirtualHost>
+
+
+--------------------------------
+
+sudo nano /etc/apache2/sites-available/download.ewubdca.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@download-ewubdca
+    ServerName download.ewubdca.com
+    DocumentRoot /var/www/ewubdca/download
+    ErrorLog ${APACHE_LOG_DIR}/download_ewubdca_error.log
+    CustomLog ${APACHE_LOG_DIR}/download_ewubdca_access.log combined
+</VirtualHost>
+
+
+--------------------------------
+
+sudo nano /etc/apache2/sites-available/bbc.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@bbc
+    ServerName www.bbc.com
+    DocumentRoot /var/www/bbc
+    ErrorLog ${APACHE_LOG_DIR}/bbc_error.log
+    CustomLog ${APACHE_LOG_DIR}/bbc_access.log combined
+</VirtualHost>
+
+
+--------------------------------
+
+sudo nano /etc/apache2/sites-available/cnn.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@cnn
+    ServerName www.cnn.com
+    DocumentRoot /var/www/cnn
+    ErrorLog ${APACHE_LOG_DIR}/cnn_error.log
+    CustomLog ${APACHE_LOG_DIR}/cnn_access.log combined
+</VirtualHost>
+
+
+
+--------------------------------
+
+
+
+sudo nano /etc/apache2/sites-available/verysecureserver.conf
+
+<VirtualHost *:80>
+    ServerAdmin webmaster@cnn
+    ServerName www.verysecureserver.com
+    DocumentRoot /var/www/verysecureserver
+    ErrorLog ${APACHE_LOG_DIR}/verysecureserver_error.log
+    CustomLog ${APACHE_LOG_DIR}/verysecureserver_access.log combined
+</VirtualHost>
+
+
+--------------------------------
+
+#Enable all the sites:
+sudo a2ensite www.ewubdca.conf
+sudo a2ensite apply.ewubdca.conf
+sudo a2ensite download.ewubdca.conf
+sudo a2ensite bbc.conf
+sudo a2ensite cnn.conf
+sudo a2ensite verysecureserver.conf
+
+#Disable the default:
+sudo a2dissite 000-default.conf
+
+-------------------------------
+#Check the public IP:
+ifconfig
+
+#Public IP : 192.168.0.117
+
+
+#Update Host File:
+sudo nano /etc/hosts
+
+192.168.0.117   www.ewubdca.com
+192.168.0.117   apply.ewubdca.com
+192.168.0.117   download.ewubdca.com
+192.168.0.117   www.bbc.com
+192.168.0.117   www.cnn.com
+192.168.0.117   www.verysecureserver.com
+
+
+-------------------------------
+#Restart Apache2:
+sudo systemctl restart apache2
+OR,
+sudo service apache2 restart
+
+
+-------------------------------
+
+#Ping the sites:
+ping www.ewubdca.com
+nslookup www.ewubdca.com
+

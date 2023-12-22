@@ -1,0 +1,16 @@
+
+===============================ADD NEW USER=====================================
+
+
+#Add new Users For Apache Server and DNS:
+sudo adduser ubu_ser
+sudo adduser ubu_dns
+
+#Give Root privileges to the new user:
+sudo usermod -aG sudo ubu_ser
+sudo usermod -aG sudo ubu_dns
+
+
+
+#Login as Apache Server to config :
+su - ubu_ser

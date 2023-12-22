@@ -1,0 +1,157 @@
+
+===========================Firewall===========================================
+
+ss -ntl
+
+sudo ufw status
+
+sudo ufw allow 22
+sudo ufw allow 53
+sudo ufw allow 80
+sudo ufw allow 443
+sudo ufw allow 3000
+
+
+sudo ufw enable
+
+----------------------------------
+sudo ufw delete allow 3000
+sudo ufw delete deny 3000
+----------------------------------
+
+sudo ufw default deny incoming
+sudo ufw reload
+
+ss -ntl
+
+
+
+
+===========================SSH==========================================
+
+sudo apt update
+sudo apt install openssh-server
+
+
+-----------------------
+sudo nano /etc/ssh/sshd_config
+Port 3000
+
+PermitRootLogin no
+PasswordAuthentication yes
+----------------------------------
+sudo systemctl restart ssh
+
+
+---------From client
+sudo apt install openssh-client
+
+
+ssh -p 3000 ubu@192.168.0.148
+
+ssh -p 3000 root@192.168.0.148	// Direct root login will not work 
+
+
+
+
+=======================================IDS======================================
+
+sudo apt install snort
+
+service snort status
+sudo systemctl stop snort
+sudo systemctl enable snort
+sudo systemctl start snort
+
+cd /etc/snort
+
+sudo cp snort.conf snort.conf.backup
+
+# Find all the line and edit it:
+sudo nano snort.conf
+
+ipvar HOME_NET 192.168.0.0/24
+
+
+
+----------------------------------
+
+sudo snort -T -i enp3s0 -c /etc/snort/snort.conf
+
+
+
+
+--------------------------
+
+sudo gedit snort.conf
+
+comment out all the rules: 597 to 717
+
+Output Check:
+
++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Initializing rule chains...
+
+0 Snort rules read
+
+    0 detection rules
+
+    0 decoder rules
+
+    0 preprocessor rules
+
+0 Option Chains linked into 0 Chain Headers
+
++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+----------------------------------------------------------------------
+
+sudo nano /etc/snort/rules/local.rules
+
+
+alert icmp any any -> $HOME_NET any (msg:"Ping Detected"; sid:1001; rev:1;)
+alert tcp any any -> $HOME_NET 3000 (msg:"SSH Authentication Attempted"; sid :1002; rev:1;)
+
+
+# [ $HOME_NET : It will detect all for all ip in network]
+
+alert icmp any any -> 192.168.0.148 any (msg:"Ping Detected"; sid:1001; rev:1;)
+alert tcp any any -> 192.168.0.148 3000 (msg:"SSH Authentication Attempted"; sid :1002; rev:1;)
+
+alert tcp any any -> $HOME_NET 80 (flags: S; msg:"Possible TCP DoS"; flow: stateless; detection_filter: track by_dst, count 70, seconds 10; sid:1003;)
+alert tcp any any -> $HOME_NET 80 (flags: S; msg:"Possible TCP DoS"; flow: stateless; detection_filter: track by_src, count 70, seconds 10; sid:1004)
+
+----------------------------------------------------------
+
+#Show on console :
+sudo snort -q -l /var/log/snort -i enp0s3 -A console -c /etc/snort/snort.conf
+
+
+# Create alert file and write on it :
+sudo snort -q -l /var/log/snort -i enp0s3 -A fast -c /etc/snort/snort.conf
+
+
+
+
+
+-----------------------------Attack---------------------------------------------
+
+sudo apt install hping3
+
+hping3 -h
+
+
+
+#Check the port number of the server
+nslookup www.ewubdca.com
+
+
+
+hping3 --count 15000 --data 120 --syn --win 64 -p 53 --flood --rand-source 192.168.0.148
+
+
+
+
+

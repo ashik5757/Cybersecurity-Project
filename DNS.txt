@@ -1,0 +1,224 @@
+
+
+
+=============================DNS Config============================================
+
+#Login as DNS Server to config :
+su - ubu_dns
+
+
+
+#install bind9:
+sudo apt update
+sudo apt-get install bind9
+
+
+---------------------------------------------
+#Edit Bind9 config file:
+sudo nano /etc/bind/named.conf.local
+
+zone "ewubdca.com" IN {
+    type master;
+    file "/etc/bind/db.ewubdca";
+};
+
+zone "cnn.com" IN {
+    type master;
+    file "/etc/bind/db.cnn";
+};
+
+zone "bbc.com" IN {
+    type master;
+    file "/etc/bind/db.bbc";
+};
+
+
+zone "verysecureserver.com" IN {
+    type master;
+    file "/etc/bind/db.verysecureserver";
+};
+
+
+----------------------------------------
+#Create Zone Files for ewubdca:
+
+sudo nano /etc/bind/db.ewubdca
+
+$TTL    604800
+@       IN      SOA     ns1.ewubdca.com. root.ewubdca.com. (
+                              2023121001
+                              604800
+                              86400
+                              2419200
+                              604800 )
+
+@       IN      NS      ns1.ewubdca.com.
+ns1     IN      A       192.168.0.117
+www     IN      A       192.168.0.117
+apply   IN      A       192.168.0.117
+download IN     A       192.168.0.117
+@       IN      AAAA    ::1
+
+
+----------------------------------------
+#Create Zone Files for CNN
+
+
+sudo nano /etc/bind/db.cnn
+
+$TTL    604800
+@       IN      SOA     ns1.cnn.com. root.cnn.com. (
+                            2023121001
+                            604800
+                            86400
+                            2419200
+                            604800 )
+
+@       IN      NS      ns1.cnn.com.
+ns1     IN      A       192.168.0.117
+www     IN      A       192.168.0.117
+@       IN      AAAA    ::1
+
+
+----------------------------------------
+#Create Zone Files for BBC
+
+
+sudo nano /etc/bind/db.bbc
+
+$TTL    604800
+@       IN      SOA     ns1.bbc.com. root.bbc.com. (
+                            2023121001
+                            604800
+                            86400
+                            2419200
+                            604800 )
+
+@       IN      NS      ns1.bbc.com.
+ns1     IN      A       192.168.0.117
+www     IN      A       192.168.0.117
+@       IN      AAAA    ::1
+
+
+
+
+----------------------------------------
+#Create Zone Files for Verysecureserver
+
+
+sudo nano /etc/bind/db.verysecureserver
+
+$TTL    604800
+@       IN      SOA     ns1.verysecureserver.com. root.verysecureserver.com. (
+                            2023121001
+                            604800
+                            86400
+                            2419200
+                            604800 )
+
+@       IN      NS      ns1.verysecureserver.com.
+ns1     IN      A       192.168.0.117
+www     IN      A       192.168.0.117
+@       IN      AAAA    ::1
+
+
+
+------------------------Reverse Lookup------------------
+
+#Add reverse zone in config file:
+sudo nano /etc/bind/named.conf.local
+
+zone "0.168.192.in-addr.arpa" IN {
+    type master;
+    file "/etc/bind/db.0.168.192";
+};
+
+-----------------------------------------
+#Create reverse zone files:
+sudo nano /etc/bind/db.0.168.192
+
+
+$TTL    604800
+@       IN      SOA     ns1.ewubdca.com. root.ewubdca.com. (
+                            2023121003
+                            604800
+                            86400
+                            2419200
+                            604800 )
+
+@       IN      NS     ns1.ewubdca.com.
+1      IN      PTR     www.ewubdca.com.
+2      IN      PTR     apply.ewubdca.com.
+3      IN      PTR     download.ewubdca.com.
+4      IN      PTR     www.cnn.com.
+5      IN      PTR     www.bbc.com.
+6      IN      PTR     www.verysecureserver.com.
+
+
+---------------------------------------------------
+
+#Restart the Bind9 server:
+sudo service bind9 reload
+sudo service bind9 restart
+
+#Restart the apache2 server:
+sudo service apache2 restart
+
+
+-------------------------------------------
+#Test all the sites from HOST:
+
+nslookup www.ewubdca.com
+nslookup www.bbc.com
+nslookup www.cnn.com
+nslookup www.verysecureserver.com
+
+
+ping www.ewubdca.com
+ping apply.ewubdca.com
+ping download.ewubdca.com
+ping www.bbc.com
+ping www.cnn.com
+ping www.verysecureserver.com
+
+
+------------------------NO NEED IF tests are OK---------------------------------------
+
+sudo ufw status
+sudo ufw enable
+sudo ufw allow bind9
+
+
+---------------------NO NEED IF tests are OK------------------------------
+
+
+========Reset resolv.conf============
+sudo systemctl restart systemd-resolved
+
+==================then copy base to resolv.conf
+sudo ln -sf /run/systemd/resolve/resolv.conf /etc/resolv.conf
+
+sudo nano /etc/resolv.conf
+
+nameserver 192.168.0.117
+nameserver 192.168.0.1
+search localdomain
+
+
+---------------------------------------------------------
+#Test all the sites from Client:
+
+nslookup www.ewubdca.com
+nslookup www.bbc.com
+nslookup www.cnn.com
+nslookup www.verysecureserver.com
+
+
+ping www.ewubdca.com
+ping apply.ewubdca.com
+ping download.ewubdca.com
+ping www.bbc.com
+ping www.cnn.com
+ping www.verysecureserver.com
+
+
